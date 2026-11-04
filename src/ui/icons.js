@@ -10,6 +10,7 @@ export const ICON = {
   arc: S('<path d="M13 2L5 13h6l-2 9 10-12h-6z"/>'),
   blink: S('<path d="M3 12h6M15 12h6M9 7l5 5-5 5"/>'),
   dodge: S('<path d="M5 18c3-8 8-10 14-9M19 9l-4-2M19 9l-2 4"/>'),
+  hold: S('<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/><path d="M4 4l16 16"/>'),
   hp: S('<path d="M9 3h6M10 3v4l-4 8a4 4 0 0 0 4 6h4a4 4 0 0 0 4-6l-4-8V3"/><path d="M8 14h8" />'),
   mana: S('<path d="M9 3h6M10 3v4l-4 8a4 4 0 0 0 4 6h4a4 4 0 0 0 4-6l-4-8V3"/><path d="M8 14h8" />'),
   weapon: S('<path d="M14 3l7 0 0 7L9 22l-4-4zM5 18l-2 3 3-2M13 11l-3-3"/>'),

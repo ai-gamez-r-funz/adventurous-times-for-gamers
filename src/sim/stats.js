@@ -41,5 +41,6 @@ export function computeStats(classId, level, equip) {
     atkSpeed: sum.atkSpeed ?? 0,
     leech: sum.leech ?? 0,
     manaRegen: b.manaRegen + (sum.manaRegen ?? 0),
+    dodge: Math.min(50, (b.dodge ?? 0) + (sum.dodge ?? 0)), block: Math.min(55, (b.block ?? 0) + (sum.block ?? 0)),
   };
 }

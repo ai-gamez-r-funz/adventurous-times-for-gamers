@@ -6,7 +6,6 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { clamp, lerpAngle, dirOf } from '../core/util.js';
-import { DODGE } from '../data/classes.js';
 import { createRig, poseRig, setFlash } from './rigs.js';
 import { ChamberView } from './chamberView.js';
 import { LightRig } from './lights.js';
@@ -45,6 +44,9 @@ export class GameView {
     this.composer = null; this.fx = { vig: 0.55 };
     this.pxRatio = 1; this.w = 1; this.h = 1;
     this.barGeo = new THREE.PlaneGeometry(1, 1);
+    this.lockTarget = null;
+    this.lockRing = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.05, 40), new THREE.MeshBasicMaterial({ color: 0xffd070, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false, depthTest: false }));
+    this.lockRing.rotation.x = -Math.PI / 2; this.lockRing.renderOrder = 15; this.lockRing.visible = false; this.scene.add(this.lockRing);
     this.setQuality(quality);
   }
 
@@ -97,7 +99,6 @@ export class GameView {
     on('hazardActive', (e) => { const h = e.hazard; this.particles.burst(h.x, 0.2, h.z, { count: 22, color: 0xff7a40, speed: 4, spread: 1.2, life: 0.5 }); this.decals.circle(h.x, h.z, h.r, 0xffb070, 0.35, 0.6); this.shake(h.r > 5 ? 0.22 : 0.1); });
     on('chain', (e) => { this.beams.fire(e.points); for (const p of e.points.slice(1)) this.particles.burst(p.x, 1, p.z, { count: 8, color: 0xbfe8ff, speed: 3, life: 0.35 }); });
     on('blink', (e) => { for (const p of [e.from, e.to]) this.particles.burst(p.x, 0.8, p.z, { count: 26, color: 0xff9040, speed: 4, life: 0.5, grav: -1 }); });
-    on('roll', (e) => { this.particles.burst(e.actor.x, 0.1, e.actor.z, { count: 8, color: 0x9a9080, speed: 1.5, life: 0.5, size: 0.2, grav: 0.5, up: 0.3 }); });
     on('loot', (e) => this.particles.burst(e.loot.x, 0.3, e.loot.z, { count: 8, color: 0xffd070, speed: 2, life: 0.5 }));
     on('pickup', (e) => this.particles.burst(e.loot.x, 0.5, e.loot.z, { count: 10, color: 0xffe8a0, speed: 2.5, life: 0.45, grav: 1 }));
     on('levelup', () => { const p = game.player; this.decals.ring(p.x, p.z, 4, 0xffe090, 0.9); this.decals.ring(p.x, p.z, 2.5, 0xffffff, 0.7); for (let i = 0; i < 40; i++) this.particles.emit(p.x + (Math.random() - 0.5) * 1.2, 0.1, p.z + (Math.random() - 0.5) * 1.2, 0, 2 + Math.random() * 3, 0, 1.1, 0.14, 0xffe090, -0.5); });
@@ -110,7 +111,7 @@ export class GameView {
     on('boss', (e) => { if (e.kind === 'shift') { const a = e.actor; this.decals.ring(a.x, a.z, 7, 0xffa060, 1.0); this.shake(0.5); this.hurtFlash = 0; } if (e.kind === 'dead') { this.shake(0.6); } });
     on('windup', (e) => { if (e.move.id === 'bishop_summon') { const a = e.actor; this.particles.burst(a.x, 1.8, a.z, { count: 30, color: 0x9060d0, speed: 3, life: 1.0, grav: 0.5 }); } });
     on('playerDeath', () => { this.hurtFlash = 1; });
-    on('dodged', (e) => { this.particles.burst(e.actor.x, 1, e.actor.z, { count: 10, color: 0xaad0ff, speed: 3, life: 0.35 }); });
+    on('dodged', (e) => { this.particles.burst(e.actor.x, 1, e.actor.z, { count: 12, color: 0xaad0ff, speed: 3.5, life: 0.4 }); this.decals.ring(e.actor.x, e.actor.z, 1.6, 0xaad0ff, 0.35); });
     on('potion', (e) => { const p = game.player; this.particles.burst(p.x, 0.8, p.z, { count: 18, color: e.kind === 'hp' ? 0xff5050 : 0x6090ff, speed: 2, life: 0.7, grav: 1 }); });
     on('unseal', () => this.shake(0.3));
     if (game.chamber) this.onChamber({ id: game.chamber.id, def: game.chamber.def, initial: true });
@@ -171,9 +172,9 @@ export class GameView {
     if (move.id === 'whirlwind') { this.decals.spawn(null ?? this.ringG(), { x: actor.x, z: actor.z, rot: 0, color: 0xfff0d0, a0: 0.6, a1: 0, s0: 1.2, s1: move.shape.radius * 1.05, dur: 0.22 }); this.particles.burst(actor.x, 0.8, actor.z, { count: 10, color: 0xfff0d0, speed: 5, life: 0.25, size: 0.08, spread: 1.3 }); }
   }
   ringG() { if (!this._ringG) { this._ringG = new THREE.RingGeometry(0.78, 1, 40); this._ringG.rotateX(-Math.PI / 2); } return this._ringG; }
-  onHit({ attacker, target, amount, crit, x, z, killed, poiseBreak, armored }) {
+  onHit({ attacker, target, amount, crit, x, z, killed, poiseBreak, armored, blocked }) {
     const toPlayer = target.kind === 'player';
-    const col = toPlayer ? 0xff3030 : crit ? 0xffe070 : target.def?.tags?.includes('undead') ? 0xd8d0c0 : 0xff6040;
+    const col = blocked ? 0xffd070 : toPlayer ? 0xff3030 : crit ? 0xffe070 : target.def?.tags?.includes('undead') ? 0xd8d0c0 : 0xff6040;
     this.particles.burst(x, 1.0, z, { count: crit ? 22 : 12, color: col, speed: crit ? 6 : 4, life: 0.4, size: crit ? 0.16 : 0.11 });
     if (toPlayer) { this.hurtFlash = Math.min(1, 0.45 + amount / Math.max(40, this.game.stats.maxHp * 0.4)); this.shake(0.18 + Math.min(0.3, amount / this.game.stats.maxHp)); }
     else if (killed) this.shake(target.def?.boss ? 0.5 : 0.14);
@@ -271,7 +272,6 @@ export class GameView {
     const moveAmt = clamp((sim.speedNow ?? 0) / base, 0, 1.2);
     const st = { kind: 'idle', t: this.time, dt, moveAmt: moveAmt > 0.06 ? Math.min(1, moveAmt) : 0 };
     if (sim.dead) { st.kind = 'dead'; st.deadK = sim.deadT / 0.7; }
-    else if (sim.state === 'roll') { st.kind = 'roll'; st.rollK = clamp(sim.rollT / DODGE.duration, 0, 1); }
     else if (sim.state === 'stagger') st.kind = 'stagger';
     else if (sim.action) {
       const a = sim.action, m = a.move;
@@ -306,7 +306,6 @@ export class GameView {
       if (hurt > 0 || !v.eliteBase) setFlash(rig, hurt, sim.kind === 'player' ? 0xff2020 : 0xffffff);
       else if (v.eliteBase) setFlash(rig, 0.18 + Math.sin(this.time * 3) * 0.06, ELITE_COLOR[sim.elite]);
       if (sim.invuln && sim.def?.boss) setFlash(rig, 0.5 + Math.sin(this.time * 18) * 0.3, 0xffd890);
-      if (sim.iframes) rig.root.visible = Math.floor(this.time * 40) % 2 === 0 || true; // roll tumble reads clearly without blinking
       if (v.eliteRing) v.eliteRing.rotation.z = this.time;
       // enemy bar
       if (v.bar) {
@@ -384,6 +383,9 @@ export class GameView {
     this.updateCamera(dt, aim);
     this.chamberView?.update(dt, this.time, g.player);
     this.telegraphs.update(g);
+    const lk = this.lockTarget;
+    this.lockRing.visible = !!lk;
+    if (lk) { const r = (lk.radius ?? 0.5) * 1.5 + Math.sin(this.time * 6) * 0.05; this.lockRing.position.set(lk.x, 0.06, lk.z); this.lockRing.scale.setScalar(r); this.lockRing.rotation.z = this.time * 1.5; }
     this.lights.update(dt, this.time, g.player);
     this.particles.update(dt); this.decals.update(dt); this.beams.update(dt);
     this.hurtFlash = Math.max(0, this.hurtFlash - dt * 2.2);

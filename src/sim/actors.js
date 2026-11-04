@@ -109,7 +109,7 @@ export function updateAction(game, a, dt) {
     const hit = moveActor(game, a, act.dir.x * sp * dt, act.dir.z * sp * dt);
     if (hit && m.move.type === 'lunge' && a.kind === 'enemy') act.t = Math.max(act.t, act.startup + act.active); // stop lunging into a wall
   }
-  if (m.moveDuring && act.phase === m.moveDuring.phase && a.kind === 'player') {
+  if (m.moveDuring && act.phase === m.moveDuring.phase && a.kind === 'player' && !a.standing) {
     const d = a.aimDir; const sp = m.moveDuring.speed * (a.status.slow ? 1 - a.status.slow.mag : 1);
     moveActor(game, a, d.x * sp * dt, d.z * sp * dt);
   }

@@ -1,6 +1,6 @@
 // HUD + panels (inventory, codex). DOM-based, reads simulation state, never mutates it except through Game methods.
 import { ICON, slotIcon } from './icons.js';
-import { SKILLS, CLASSES, DODGE, xpToNext, MAX_LEVEL } from '../data/classes.js';
+import { SKILLS, CLASSES, xpToNext, MAX_LEVEL } from '../data/classes.js';
 import { BASES, RARITY, SLOTS, SLOT_LABEL, UNIQUES, STAT_LABEL, BAG_SIZE } from '../data/items.js';
 import { itemStats } from '../sim/stats.js';
 import { LORE, RELICS, SIGILS } from '../data/lore.js';
@@ -82,7 +82,7 @@ export class Hud {
       s1: mk('', ICON.bash, `right:calc(196px + ${sa});bottom:calc(30px + ${sb})`, () => input.skillSlot(1), 'Skill 2'),
       s2: mk('', ICON.whirl, `right:calc(176px + ${sa});bottom:calc(104px + ${sb})`, () => input.skillSlot(2), 'Skill 3'),
       s3: mk('', ICON.charge, `right:calc(112px + ${sa});bottom:calc(120px + ${sb})`, () => input.skillSlot(3), 'Skill 4'),
-      dodge: mk('', ICON.dodge, `right:calc(14px + ${sa});bottom:calc(112px + ${sb})`, () => input.dodge(), 'Dodge'),
+      hold: mk('', ICON.hold, `right:calc(14px + ${sa});bottom:calc(112px + ${sb})`, () => { const on = input.toggleStandTouch(); this.tb.hold.style.borderColor = on ? '#ffd070' : ''; this.tb.hold.style.background = on ? '#5a4420cc' : ''; }, 'Hold position'),
       hp: mk('', ICON.hp, `left:calc(104px + env(safe-area-inset-left));bottom:calc(10px + ${sb});color:#ff8a8a;width:52px;height:52px;padding:12px`, () => input.potion('hp'), 'Health potion'),
       mp: mk('', ICON.mana, `right:calc(104px + ${sa});bottom:calc(-60px + ${sb});display:none`, () => input.potion('mana'), 'Resource potion'),
     };
@@ -97,6 +97,7 @@ export class Hud {
     on('hit', (e) => this.onHit(e));
     on('xp', (e) => { /* shown in bar */ void e; });
     on('pickup', (e) => { const l = e.loot; if (l.kind === 'gold') this.float(game.player.x, game.player.z, `+${l.amount} gold`, 'info'); else if (l.kind === 'potion') this.float(game.player.x, game.player.z, '+ potion', 'info'); else this.float(game.player.x, game.player.z, esc(l.item.name), 'info', rarityColor(l.item.rarity)); this.ctx.audio.play(l.kind === 'gold' ? 'gold' : 'pickup'); });
+    on('dodged', (e) => { this.float(e.x, e.z, 'Dodged', 'info'); this.ctx.audio.play('roll', { vol: 0.6 }); });
     on('potion', (e) => { const p = game.player; this.float(p.x, p.z, e.kind === 'hp' ? '+ life' : '+ resource', 'heal'); this.ctx.audio.play('potion'); });
     on('inventory', () => { this.refreshInv(); });
     on('lore', (e) => this.ctx.onLore?.(e));
@@ -119,7 +120,7 @@ export class Hud {
     });
     const sep = $('<div style="width:10px"></div>'); this.skillbar.appendChild(sep);
     const mk = (cls, icon, key, fn, title) => { const el = $(`<div class="slot small ${cls}" title="${title}"><div class="key">${key}</div>${icon}<div class="cd"></div><div class="cnt"></div></div>`); el.onpointerdown = (e) => { e.stopPropagation(); fn(); }; this.skillbar.appendChild(el); return { el, cd: el.querySelector('.cd'), cnt: el.querySelector('.cnt') }; };
-    this.dodgeSlot = mk('', ICON.dodge, 'SPC', () => this.ctx.input.dodge(), 'Dodge roll (Space) — brief invulnerability');
+    this.holdSlot = mk('hold', ICON.hold, 'SHIFT', () => this.ctx.input.toggleStandTouch(), 'Hold position (Shift): never move; clicks attack and cast toward the cursor');
     this.hpSlot = mk('pot-hp', ICON.hp, 'F', () => this.ctx.input.potion('hp'), 'Health potion (F)');
     this.mpSlot = mk('pot-mana', ICON.mana, 'G', () => this.ctx.input.potion('mana'), 'Resource potion (G)');
     this.q('.orb.mana').className = `orb mana res-${g.classId}`;
@@ -145,7 +146,7 @@ export class Hud {
   onHit(e) {
     const toPlayer = e.target.kind === 'player';
     if (e.target.prop) return;
-    this.float(e.x, e.z, `${e.amount}`, `${toPlayer ? 'player' : 'enemy'}${e.crit ? ' crit' : ''}`);
+    this.float(e.x, e.z, e.blocked ? `${e.amount} blocked` : `${e.amount}`, `${toPlayer ? 'player' : 'enemy'}${e.crit ? ' crit' : ''}`);
     const a = this.ctx.audio, pan = this.pan(e.x);
     a.play(toPlayer ? 'hurt' : e.crit ? 'hit_crit' : 'hit', { pan });
   }
@@ -180,7 +181,7 @@ export class Hud {
     const avg = (st.dmgMin + st.dmgMax) / 2;
     this.inv.innerHTML = `<h2><span>${CLASSES[g.classId].name} · Level ${p.level}</span><button class="xbtn" aria-label="Close">${ICON.close}</button></h2>
       <div class="cols"><div class="equip">${eq}</div>
-      <div class="stats"><div><b>Life</b> ${fmt(p.hp)} / ${fmt(st.maxHp)}</div><div><b>${CLASSES[g.classId].resource}</b> ${fmt(p.mana)} / ${fmt(st.maxMana)}</div><div><b>Damage</b> ${st.dmgMin.toFixed(0)}–${st.dmgMax.toFixed(0)} <small>(avg ${avg.toFixed(1)})</small></div><div><b>Armor</b> ${st.armor}</div><div><b>Crit</b> ${st.crit.toFixed(0)}%</div><div><b>Move</b> ${st.speed.toFixed(1)} m/s</div>${st.atkSpeed ? `<div><b>Atk speed</b> +${st.atkSpeed}%</div>` : ''}${st.leech ? `<div><b>Life/hit</b> ${st.leech}</div>` : ''}<div><b>Regen</b> ${st.manaRegen.toFixed(1)}/s</div><div class="gold"><i>${ICON.gold}</i> ${fmt(inv.gold)}</div><div>Potions: <span style="color:#ff8a8a">${inv.potions.hp}</span> · <span style="color:#8ab0ff">${inv.potions.mana}</span></div></div></div>
+      <div class="stats"><div><b>Life</b> ${fmt(p.hp)} / ${fmt(st.maxHp)}</div><div><b>${CLASSES[g.classId].resource}</b> ${fmt(p.mana)} / ${fmt(st.maxMana)}</div><div><b>Damage</b> ${st.dmgMin.toFixed(0)}–${st.dmgMax.toFixed(0)} <small>(avg ${avg.toFixed(1)})</small></div><div><b>Armor</b> ${st.armor}</div><div><b>Dodge</b> ${st.dodge}% · <b>Block</b> ${st.block}%</div><div><b>Crit</b> ${st.crit.toFixed(0)}%</div><div><b>Move</b> ${st.speed.toFixed(1)} m/s</div>${st.atkSpeed ? `<div><b>Atk speed</b> +${st.atkSpeed}%</div>` : ''}${st.leech ? `<div><b>Life/hit</b> ${st.leech}</div>` : ''}<div><b>Regen</b> ${st.manaRegen.toFixed(1)}/s</div><div class="gold"><i>${ICON.gold}</i> ${fmt(inv.gold)}</div><div>Potions: <span style="color:#ff8a8a">${inv.potions.hp}</span> · <span style="color:#8ab0ff">${inv.potions.mana}</span></div></div></div>
       <div class="cols" style="padding-top:0"><div class="bag">${bag}</div><div class="tip" id="tip"><small style="color:var(--dim)">Select an item. Double-click or press Equip. Drag to rearrange.</small></div></div>`;
     this.inv.querySelector('.xbtn').onclick = () => this.toggleInv(false);
     for (const c of this.inv.querySelectorAll('.cell')) {
@@ -255,7 +256,7 @@ export class Hud {
       cdt.textContent = locked ? `L${s.unlock}` : rem > 0.05 ? rem.toFixed(rem < 10 ? 1 : 0) : '';
       const tb = [this.tb.atk, this.tb.s1, this.tb.s2, this.tb.s3][i]; tb.querySelector('.cd').style.transform = `scaleY(${locked ? 1 : Math.min(1, rem / tot)})`; tb.style.opacity = locked ? 0.35 : 1;
     });
-    const dcd = (p.cd.dodge ?? 0) / DODGE.cooldown; this.dodgeSlot.cd.style.transform = `scaleY(${dcd})`; this.tb.dodge.querySelector('.cd').style.transform = `scaleY(${dcd})`;
+    this.holdSlot.el.style.borderColor = input.standing ? '#ffd070' : ''; this.holdSlot.el.style.background = input.standing ? 'linear-gradient(#5a4420,#2a200e)' : '';
     const pc = (k, slot) => { slot.cd.style.transform = `scaleY(${p.potionCd[k] / 7})`; slot.cnt.textContent = g.inv.potions[k]; slot.el.style.opacity = g.inv.potions[k] ? 1 : 0.45; };
     pc('hp', this.hpSlot); pc('mana', this.mpSlot);
     // tracker

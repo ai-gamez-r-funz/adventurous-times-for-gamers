@@ -108,7 +108,7 @@ describe('full campaign (headless playthrough)', () => {
       const p = g.player;
       const foes = g.chamber.enemies.filter((e) => !e.dead && e.spawnT <= 0).sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
       const cmds = [];
-      if (foes[0]) { const d = Math.hypot(foes[0].x - p.x, foes[0].z - p.z); if (d < 2.6 && !p.cd.dodge) cmds.push({ t: 'dodge', x: p.x - (foes[0].x - p.x), z: p.z - (foes[0].z - p.z) }); else if (p.intent.kind !== 'attack' || p.intent.target !== foes[0].id) cmds.push({ t: 'attack', id: foes[0].id }); }
+      if (foes[0]) { const d = Math.hypot(foes[0].x - p.x, foes[0].z - p.z); if (d < 2.6 && p.cd.blink === undefined && p.level >= 4) cmds.push({ t: 'skill', slot: 3, x: p.x - (foes[0].x - p.x), z: p.z - (foes[0].z - p.z) }); else if (p.intent.kind !== 'attack' || p.intent.target !== foes[0].id) cmds.push({ t: 'attack', id: foes[0].id }); }
       g.step(DT, cmds);
     }
     expect(died).toBe(false);

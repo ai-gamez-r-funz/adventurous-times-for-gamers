@@ -30,15 +30,18 @@ Bishop's Sanctum.
 * **Collecting** — 11 lore fragments, 5 hidden relics behind cracked walls, 6 unique items, a bestiary; all in the Codex (`C`).
 * **Loot** — four rarities, random affixes, class-restricted gear, atomic inventory with compare tooltips.
 
-### Controls
+### Controls (Diablo-style by default)
 | | |
 |---|---|
-| Left click / hold | Move · click enemy to attack · click loot/objects to use |
+| Left click / hold | Move · click an enemy to attack and **lock on** (the hero follows it, skills aim at it) · click loot/objects to use them |
 | Right click, `1–4` / `Q R` | Skills |
-| `Space` | Dodge roll (i-frames — learn the red telegraphs!) |
-| `WASD` | Screen-relative movement · `E` interact · `F`/`G` potions |
+| `Shift` (hold) | **Hold position** — you never move; clicks only attack/cast toward the cursor |
+| `E` · `F`/`G` | Interact · potions |
 | `I` `C` `M` `Esc` | Inventory · Codex · Mute · Menu |
-| Touch | Left thumb stick, right-hand buttons, tap to move/target |
+| Touch | Left thumb stick, right-hand buttons (incl. hold-position toggle), tap to move/target |
+
+Defence is **passive**: *Dodge* (avoid a hit) and *Block* (halve a hit) are stats from class and gear — there is no roll.
+Prefer twin-stick? **Settings → Controls → WASD + mouse aim** (LMB casts the primary skill at the cursor).
 
 ## Architecture
 

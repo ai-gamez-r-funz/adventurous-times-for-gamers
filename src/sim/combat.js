@@ -105,9 +105,14 @@ export function resolveHit(game, attacker, target, hit) {
   if (target.prop) { game.chamber.hurtProp(target, attacker, hit); return true; }
   if (target.dead || target.spawnT > 0) return false;
   if (target.invuln) return false;
-  if (target.kind === 'player' && target.iframes) return false;
+  if (target.kind === 'player') {
+    // Dodge and Block are passive secondary stats (no timing skill): dodge avoids the hit, block halves it.
+    if (game.rng.chance(game.stats.dodge / 100)) { game.emit('dodged', { actor: target, move, x: target.x, z: target.z }); return true; }
+  }
   const { amount, crit } = computeDamage(game, attacker, move, target, hit.mult ?? 1);
   let dmg = amount;
+  let blocked = false;
+  if (target.kind === 'player' && game.rng.chance(game.stats.block / 100)) { dmg = Math.max(1, Math.round(dmg * 0.5)); blocked = true; }
   // boss phase clamp: cannot cross a phase boundary until the transition plays
   let phaseHold = false;
   if (target.def?.phases && !target.ai.pendingPhase) {
@@ -136,7 +141,7 @@ export function resolveHit(game, attacker, target, hit) {
   } else {
     // player: knockback pushes, only heavy hits flinch
     target.vx += (kx / kl) * (move.knockback ?? 0) * 2.8; target.vz += (kz / kl) * (move.knockback ?? 0) * 2.8;
-    if ((move.knockback ?? 0) >= 2.4 && target.flinchImmune <= 0 && target.state !== 'roll') { beginStagger(target, 0.32); target.flinchImmune = 1.2; poiseBreak = true; }
+    if ((move.knockback ?? 0) >= 2.4 && !blocked && target.flinchImmune <= 0) { beginStagger(target, 0.32); target.flinchImmune = 1.2; poiseBreak = true; }
   }
   applyStatus(target, hit.status ?? move.status);
   // attacker bonuses
@@ -146,7 +151,7 @@ export function resolveHit(game, attacker, target, hit) {
     if (hit.gain) attacker.mana = Math.min(st.maxMana, attacker.mana + hit.gain);
   }
   const killed = target.hp <= 0;
-  game.emit('hit', { attacker, target, amount: dmg, crit, x: target.x, z: target.z, move, killed, poiseBreak, phaseHold, armored });
+  game.emit('hit', { attacker, target, amount: dmg, crit, x: target.x, z: target.z, move, killed, poiseBreak, phaseHold, armored, blocked });
   if (killed) kill(game, target, attacker);
   return true;
 }

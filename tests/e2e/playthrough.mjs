@@ -35,15 +35,22 @@ async function desktop(browser) {
   const p1 = await P();
   check('left-click moves the hero toward the cursor', Math.hypot(p1.x - p0.x, p1.z - p0.z) > 1.5, `moved ${Math.hypot(p1.x - p0.x, p1.z - p0.z).toFixed(1)}`);
 
-  // WASD
+  // mouse scheme: WASD must NOT interfere
+  const pw0 = await P();
   await page.keyboard.down('w'); await simWait(page, 0.7); await page.keyboard.up('w');
-  const p2 = await P();
-  check('W moves screen-up', p2.z < p1.z - 0.3 || p2.x < p1.x - 0.3);
+  const pw1 = await P();
+  check('mouse scheme ignores WASD (no competing controls)', Math.hypot(pw1.x - pw0.x, pw1.z - pw0.z) < 0.05);
 
-  // dodge roll
-  await page.mouse.move(640, 300);
-  await page.keyboard.press('Space');
-  check('Space starts a dodge roll', await until(page, () => window.__game.player.state === 'roll', null, 1500));
+  // Shift = hold position, even when clicking elsewhere
+  const ph0 = await P(); const far = await screenOf(ph0.x + 4, ph0.z - 4);
+  await page.keyboard.down('Shift');
+  await page.mouse.click(far.x, far.y); await simWait(page, 1.0);
+  const ph1 = await P();
+  check('Shift holds position: clicking elsewhere does not move the hero', Math.hypot(ph1.x - ph0.x, ph1.z - ph0.z) < 0.9, `moved ${Math.hypot(ph1.x - ph0.x, ph1.z - ph0.z).toFixed(2)}`);
+  await page.keyboard.up('Shift');
+  await page.mouse.click(far.x, far.y); await simWait(page, 1.0);
+  const ph2 = await P();
+  check('releasing Shift restores click-to-move', Math.hypot(ph2.x - ph1.x, ph2.z - ph1.z) > 1.5);
 
   // fight: walk to the nearest husk and click it
   await ev(page, () => { const g = window.__game; g.chamber.enemies.length = 0; const e = g.chamber.spawnEnemy('husk', 10, 18); e.ai.sleep = true; e.ai.alerted = false; window.__t = e.id; g.player.x = 7.5; g.player.z = 18.5; window.__app.view.cam.snap = true; });
@@ -54,8 +61,18 @@ async function desktop(browser) {
   check('hovering an enemy picks it', await ev(page, () => window.__app.input.hover?.kind === 'enemy'));
   await page.mouse.click(ts.x, ts.y);
   const killed = await until(page, () => { const e = window.__game.chamber.byId(window.__t); return !e || e.dead; }, null, 90000);
+  check('attacking locks onto the enemy (lock ring target)', await ev(page, () => window.__app.view.lockTarget?.id === window.__t || window.__app.input.lockId === window.__t));
   check('click-to-attack kills a husk (real combat loop)', killed);
   check('kill awards xp and drops loot', await ev(page, () => window.__game.progress.stats.kills >= 1 && (window.__game.player.xp > 0 || window.__game.player.level > 1)));
+
+  check('lock clears when the target dies', await until(page, () => window.__app.input.lockId === null, null, 3000));
+
+  // WASD scheme is opt-in via settings
+  await ev(page, () => { window.__app.settings.controls = 'wasd'; window.__app.input.setScheme('wasd'); });
+  const pk0 = await P(); await page.keyboard.down('d'); await simWait(page, 0.7); await page.keyboard.up('d');
+  const pk1 = await P();
+  check('WASD scheme (opt-in) moves the hero', Math.hypot(pk1.x - pk0.x, pk1.z - pk0.z) > 1);
+  await ev(page, () => { window.__app.settings.controls = 'mouse'; window.__app.input.setScheme('mouse'); });
 
   // inventory + codex
   await page.keyboard.press('i');

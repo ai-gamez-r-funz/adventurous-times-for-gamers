@@ -1,7 +1,7 @@
-// Player controller: command intents, skills (with input buffering), dodge roll, movement, potions.
+// Player controller: command intents, skills (with input buffering), hold-position, movement, potions. Defence is passive (Dodge/Block stats), not a skill.
 // Cancellation rules: dodge cancels startup and recovery of any skill (not active frames); skills buffer for 0.35s.
 import { dirOf, faceOf, lerpAngle, clamp } from '../core/util.js';
-import { CLASSES, SKILLS, DODGE, POTION } from '../data/classes.js';
+import { CLASSES, SKILLS, POTION } from '../data/classes.js';
 import { makeAction, updateAction } from './actors.js';
 import { tickStatus, applyKnock, slowMult } from './ai.js';
 import { cancelAction } from './combat.js';
@@ -20,13 +20,13 @@ export function handleCommand(game, p, c) {
   if (p.dead) return;
   const it = p.intent;
   switch (c.t) {
-    case 'moveTo': it.kind = 'path'; it.goal = { x: c.x, z: c.z }; it.path = null; it.pathT = 0; it.hold = !!c.hold; it.target = null; break;
-    case 'moveDir': it.dir = { x: c.x, z: c.z }; if (c.x || c.z) { it.kind = 'dir'; it.target = null; } else if (it.kind === 'dir') it.kind = 'none'; break;
+    case 'moveTo': if (p.standing) break; it.kind = 'path'; it.goal = { x: c.x, z: c.z }; it.path = null; it.pathT = 0; it.hold = !!c.hold; it.target = null; break;
+    case 'moveDir': it.dir = { x: c.x, z: c.z }; if (p.standing) break; if (c.x || c.z) { it.kind = 'dir'; it.target = null; } else if (it.kind === 'dir') it.kind = 'none'; break;
     case 'attack': it.kind = 'attack'; it.target = c.id; it.slot = c.slot ?? 0; break;
     case 'interact': it.kind = 'interact'; it.target = c.id ?? null; break;
     case 'stop': it.kind = 'none'; it.target = null; break;
-    case 'skill': p.buffer = { slot: c.slot, x: c.x, z: c.z, t: BUFFER_TIME }; if (!c.keepIntent) it.kind = it.kind === 'dir' ? 'dir' : 'none'; break;
-    case 'dodge': p.buffer = { dodge: true, x: c.x, z: c.z, t: BUFFER_TIME }; break;
+    case 'skill': p.buffer = { slot: c.slot, x: c.x, z: c.z, t: BUFFER_TIME }; if (it.kind === 'path') it.kind = 'none'; break; // an attack/dir intent survives casting a skill
+    case 'stand': p.standing = !!c.on; if (c.on && (it.kind === 'path' || it.kind === 'dir')) it.kind = 'none'; break;
     case 'potion': tryPotion(game, p, c.kind); break;
     default: break;
   }
@@ -62,19 +62,6 @@ export function tryUseSkill(game, p, slot, x, z) {
   p.action.combo = p.combo;
   const d = dirOf(p.action.face); p.aimDir = d;
   game.emit('skillUsed', { slot, skill });
-  return true;
-}
-
-export function startRoll(game, p, dir) {
-  if ((p.cd.dodge ?? 0) > 0) { game.emit('denied', { reason: 'cooldown', slot: 'dodge' }); return false; }
-  const act = p.action;
-  if (act && act.phase === 'active') return false;
-  if (act) cancelAction(game, p);
-  let d = dir && (dir.x || dir.z) ? dir : (p.moveVec.x || p.moveVec.z ? p.moveVec : dirOf(p.face));
-  const l = Math.hypot(d.x, d.z) || 1; d = { x: d.x / l, z: d.z / l };
-  p.state = 'roll'; p.rollT = 0; p.rollDir = d; p.face = faceOf(d.x, d.z);
-  p.cd.dodge = DODGE.cooldown; p.intent.kind = p.intent.kind === 'dir' ? 'dir' : 'none';
-  game.emit('roll', { actor: p, dir: d });
   return true;
 }
 
@@ -116,17 +103,6 @@ export function updatePlayer(game, p, dt) {
   p.speedNow = 0; p.moveVec = { x: 0, z: 0 };
   if (p.buffer) { p.buffer.t -= dt; if (p.buffer.t <= 0) p.buffer = null; }
 
-  // roll
-  if (p.state === 'roll') {
-    p.rollT += dt;
-    p.iframes = p.rollT >= DODGE.iFrom && p.rollT <= DODGE.iTo;
-    const k = p.rollT / DODGE.duration;
-    const sp = (DODGE.distance / DODGE.duration) * (1.45 - 0.9 * k);
-    const r = game.grid.slide(p.x, p.z, p.rollDir.x * sp * dt, p.rollDir.z * sp * dt, p.radius);
-    p.x = r.x; p.z = r.z; p.moveVec = p.rollDir; p.speedNow = sp;
-    if (p.rollT >= DODGE.duration) { p.state = 'idle'; p.iframes = false; }
-    return;
-  }
   p.iframes = false;
 
   if (p.state === 'stagger') {
@@ -135,19 +111,8 @@ export function updatePlayer(game, p, dt) {
     return;
   }
 
-  // buffered inputs
-  const b = p.buffer;
-  if (b?.dodge) {
-    if (!p.action || p.action.phase !== 'active') {
-      const dir = b.x !== undefined ? { x: b.x - p.x, z: b.z - p.z } : null;
-      p.buffer = null; startRoll(game, p, dir);
-      if (p.state === 'roll') return;
-    }
-  }
-
   if (p.action) {
     // keep updating aim for spin-style actions
-    if (p.action.move.moveDuring && p.buffer && p.buffer.x !== undefined && p.buffer.slot === undefined) { /* dodge handled above */ }
     const done = updateAction(game, p, dt);
     if (done) { /* fallthrough: pick up buffered input this same frame */ } else return;
   }
@@ -158,6 +123,7 @@ export function updatePlayer(game, p, dt) {
   }
 
   // intents
+  if (p.standing && (it.kind === 'path' || it.kind === 'dir')) it.kind = 'none';
   switch (it.kind) {
     case 'dir': {
       const d = it.dir; const l = Math.hypot(d.x, d.z);
@@ -190,7 +156,8 @@ export function updatePlayer(game, p, dt) {
         p.face = lerpAngle(p.face, faceOf(t.x - p.x, t.z - p.z), 0.6);
         if (!tryUseSkill(game, p, it.slot ?? 0, t.x, t.z)) { /* on cooldown/resource: face target and wait */ }
         else updateAction(game, p, 0);
-      } else steerPlayer(game, p, t.x, t.z, dt, canSee ? Math.max(0.4, reach * 0.8) : 0.5); // no line of sight: keep closing until a shot is clear
+      } else if (p.standing) p.face = lerpAngle(p.face, faceOf(t.x - p.x, t.z - p.z), Math.min(1, dt * 16)); // hold position: turn, never chase
+      else steerPlayer(game, p, t.x, t.z, dt, canSee ? Math.max(0.4, reach * 0.8) : 0.5); // no line of sight: keep closing until a shot is clear
       break;
     }
     case 'interact': {
@@ -198,7 +165,7 @@ export function updatePlayer(game, p, dt) {
       if (!target) { it.kind = 'none'; break; }
       const d = Math.hypot(target.x - p.x, target.z - p.z);
       if (d <= (target.range ?? 1.9)) { game.chamber.interact(target); it.kind = 'none'; }
-      else if (!steerPlayer(game, p, target.x, target.z, dt, (target.range ?? 1.9) * 0.8)) it.kind = 'none';
+      else if (p.standing || !steerPlayer(game, p, target.x, target.z, dt, (target.range ?? 1.9) * 0.8)) it.kind = 'none';
       break;
     }
     default: break;
