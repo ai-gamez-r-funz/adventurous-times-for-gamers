@@ -37,7 +37,7 @@ function boot() {
   window.__app = app;
 
   const applySettings = () => {
-    audio.setVolume(settings.volume); audio.setMuted(settings.muted); input?.setScheme(settings.controls);
+    audio.setVolume(settings.volume); audio.setMuted(settings.muted); input?.setScheme(settings.controls); if (game) game.walkPush = settings.controls === 'wasd';
     view.reducedMotion = settings.reducedMotion; document.body.classList.toggle('reduced', settings.reducedMotion);
     const q = settings.quality === 'auto' ? (coarse ? 'low' : (view.autoQ ?? 'high')) : settings.quality;
     if (q !== view.quality) view.setQuality(q);
@@ -93,7 +93,7 @@ function boot() {
   // ------------------------------------------------------------ gameplay
   function startGame(classId, save) {
     screens.hide();
-    game = new Game({ classId: classId ?? 'oathbound', seed: (Math.random() * 1e9) | 0, save, storage });
+    game = new Game({ classId: classId ?? 'oathbound', seed: (Math.random() * 1e9) | 0, save, storage }); game.walkPush = settings.controls === 'wasd';
     stage = null; mode = 'play';
     view.bind(game); view.cam.snap = true; hud.bind(game); hud.show(true); input.clear();
     wireAudio(game);
@@ -125,6 +125,7 @@ function boot() {
     const k = e.key.toLowerCase();
     if (k === 'escape') {
       if (hud.panelOpen) { hud.closePanels(); return; }
+      if (mode === 'play' && input.lockedBlock()) { input.unlock(); input.push({ t: 'stop' }); return; }
       if (mode === 'play') openPause(); else if (mode === 'paused' && screens.open) { screens.hide(); mode = 'play'; }
       return;
     }

@@ -72,7 +72,7 @@ export class PushPlates {
     const p = this.ch.game.player;
     for (const b of this.blocks) {
       if (b.slideT > 0) b.slideT = Math.max(0, b.slideT - dt);
-      if (this.solved || p.dead) continue;
+      if (this.solved || p.dead || this.ch.game.walkPush === false) continue;
       // player must be pressing against one face of the block while moving into it
       const dx = b.x - p.x, dz = b.z - p.z;
       const touching = Math.abs(dx) < 0.5 + p.radius + 0.14 && Math.abs(dz) < 0.5 + p.radius + 0.14;
@@ -87,17 +87,22 @@ export class PushPlates {
       if (!dir) { this.pushT.set(b.id, 0); continue; }
       const t = (this.pushT.get(b.id) ?? 0) + dt;
       this.pushT.set(b.id, t);
-      if (t >= 0.28) {
-        this.pushT.set(b.id, 0);
-        const nx = b.cx + dir[0], nz = b.cz + dir[1];
-        if (this.cellFree(nx, nz, b)) {
-          b.fromX = b.x; b.fromZ = b.z;
-          this.place(b, nx, nz); b.slideT = 0.24; b.slideDur = 0.24;
-          this.ch.game.emit('puzzle', { id: this.id, kind: 'push_plates', event: 'push', prop: b });
-          this.check();
-        } else this.ch.game.emit('puzzle', { id: this.id, kind: 'push_plates', event: 'blocked', prop: b });
-      }
+      if (t >= 0.28) { this.pushT.set(b.id, 0); this.pushBlock(b, dir); }
     }
+  }
+  /** Slide a block exactly one cell along an axis if the destination is free. Used by walk-pushing and by the lock-on push command. */
+  pushBlock(b, dir) {
+    if (this.solved || b.slideT > 0) return false;
+    const nx = b.cx + dir[0], nz = b.cz + dir[1];
+    if (this.cellFree(nx, nz, b)) {
+      b.fromX = b.x; b.fromZ = b.z;
+      this.place(b, nx, nz); b.slideT = 0.24; b.slideDur = 0.24;
+      this.ch.game.emit('puzzle', { id: this.id, kind: 'push_plates', event: 'push', prop: b });
+      this.check();
+      return true;
+    }
+    this.ch.game.emit('puzzle', { id: this.id, kind: 'push_plates', event: 'blocked', prop: b });
+    return false;
   }
   check() {
     const bs = this.blocks, ps = this.plates;
@@ -121,14 +126,14 @@ export function solvePush({ free, blocks, plates, player, maxStates = 400000 }) 
     }
     return { seen, min };
   };
-  const start = { bl: blocks.map((b) => [...b]), pl: player, d: 0 };
+  const start = { bl: blocks.map((b) => [...b]), pl: player, d: 0, parent: null, move: null };
   const r0 = region(start.bl, start.pl);
   const visited = new Set([key(start.bl) + '#' + r0.min.join(',')]);
   let frontier = [{ ...start, reach: r0.seen }];
   while (frontier.length) {
     const next = [];
     for (const s of frontier) {
-      if (isSolved(s.bl)) return { solved: true, pushes: s.d };
+      if (isSolved(s.bl)) { const moves = []; for (let n = s; n.parent; n = n.parent) moves.push(n.move); return { solved: true, pushes: s.d, moves: moves.reverse() }; }
       const occ = new Set(s.bl.map((b) => b[0] + ',' + b[1]));
       for (let i = 0; i < s.bl.length; i++) {
         for (const [dx, dz] of DIRS) {
@@ -143,7 +148,7 @@ export function solvePush({ free, blocks, plates, player, maxStates = 400000 }) 
           if (visited.has(k)) continue;
           visited.add(k);
           if (visited.size > maxStates) return { solved: false, pushes: -1, exhausted: true };
-          next.push({ bl: nb, pl, d: s.d + 1, reach: rg.seen });
+          next.push({ bl: nb, pl, d: s.d + 1, reach: rg.seen, parent: s, move: { block: i, dir: [dx, dz] } });
         }
       }
     }

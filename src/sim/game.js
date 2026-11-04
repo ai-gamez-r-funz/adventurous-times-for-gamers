@@ -19,6 +19,7 @@ export class Game {
     this.events = new Emitter();
     this.storage = storage;
     this.fade = fade;
+    this.walkPush = true; // main turns this off for the mouse scheme (blocks are pushed by lock-on + click instead)
     this.time = 0; this.idc = 1; this.dirty = false; this.transition = null; this.pendingVictory = 0; this.deadT = 0; this.over = false;
     const s = save ? migrate(save) : null;
     this.classId = s?.classId ?? classId;

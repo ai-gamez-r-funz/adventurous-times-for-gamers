@@ -26,6 +26,7 @@ export function handleCommand(game, p, c) {
     case 'interact': it.kind = 'interact'; it.target = c.id ?? null; break;
     case 'stop': it.kind = 'none'; it.target = null; break;
     case 'skill': p.buffer = { slot: c.slot, x: c.x, z: c.z, t: BUFFER_TIME }; if (it.kind === 'path') it.kind = 'none'; break; // an attack/dir intent survives casting a skill
+    case 'push': { const b = game.chamber.props.get(c.id); if (!b || b.t !== 'block') break; it.kind = 'push'; it.target = c.id; it.pdir = [c.dx, c.dz]; it.path = null; break; }
     case 'stand': p.standing = !!c.on; if (c.on && (it.kind === 'path' || it.kind === 'dir')) it.kind = 'none'; break;
     case 'potion': tryPotion(game, p, c.kind); break;
     default: break;
@@ -158,6 +159,20 @@ export function updatePlayer(game, p, dt) {
         else updateAction(game, p, 0);
       } else if (p.standing) p.face = lerpAngle(p.face, faceOf(t.x - p.x, t.z - p.z), Math.min(1, dt * 16)); // hold position: turn, never chase
       else steerPlayer(game, p, t.x, t.z, dt, canSee ? Math.max(0.4, reach * 0.8) : 0.5); // no line of sight: keep closing until a shot is clear
+      break;
+    }
+    case 'push': {
+      const b = game.chamber.props.get(it.target), pz = b && game.chamber.puzzleOfBlock(b.id);
+      if (!b || !pz || pz.solved) { it.kind = 'none'; break; }
+      if (b.slideT > 0) break; // wait for the slide to finish, then (if held) the next push command arrives
+      const d = it.pdir, sx = b.x - d[0] * 0.95, sz = b.z - d[1] * 0.95; // the stand point on the far side of the block
+      const dist = Math.hypot(sx - p.x, sz - p.z);
+      const aligned = Math.abs((d[0] ? p.z - b.z : p.x - b.x)) < 0.45 && Math.hypot(b.x - p.x, b.z - p.z) < 1.35 && ((b.x - p.x) * d[0] + (b.z - p.z) * d[1]) > 0.4;
+      if (aligned || dist < 0.2) {
+        p.face = lerpAngle(p.face, faceOf(d[0], d[1]), 1);
+        if (pz.pushBlock(b, d)) { p.vx += d[0] * 3.2; p.vz += d[1] * 3.2; }
+        it.kind = 'none';
+      } else if (p.standing || !steerPlayer(game, p, sx, sz, dt, 0.12)) it.kind = 'none';
       break;
     }
     case 'interact': {

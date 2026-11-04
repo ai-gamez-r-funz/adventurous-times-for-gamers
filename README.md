@@ -25,7 +25,7 @@ three sigils to the Ashen Nave, and face the **Hollow Bishop**.
 Bishop's Sanctum.
 
 * **Hall of Embers** — light four braziers in the order the mural shows (melee, spells and projectiles all light them).
-* **The Ossuary** — push coffins onto pressure plates (solvability is proven by a BFS solver in the tests; a reset rune prevents soft-locks).
+* **The Ossuary** — push coffins onto pressure plates (a BFS solver proves it's solvable, and a test replays its plan through the real lock-on push controller; a reset rune prevents soft-locks).
 * **The Reliquary** — listen to the glyph song, repeat it, then beat an elite Gravebrute.
 * **Collecting** — 11 lore fragments, 5 hidden relics behind cracked walls, 6 unique items, a bestiary; all in the Codex (`C`).
 * **Loot** — four rarities, random affixes, class-restricted gear, atomic inventory with compare tooltips.
@@ -35,6 +35,7 @@ Bishop's Sanctum.
 |---|---|
 | Left click / hold | Move · click an enemy to attack and **lock on** (the hero follows it, skills aim at it) · click loot/objects to use them |
 | Right click, `1–4` / `Q R` | Skills |
+| Click a coffin | **Lock on to a block** — then click toward a direction to push it one cell (the hero walks round to the far side); hold to repeat; click the block again / `Esc` / right-click to release |
 | `Shift` (hold) | **Hold position** — you never move; clicks only attack/cast toward the cursor |
 | `E` · `F`/`G` | Interact · potions |
 | `I` `C` `M` `Esc` | Inventory · Codex · Mute · Menu |
