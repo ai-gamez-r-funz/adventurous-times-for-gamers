@@ -122,6 +122,20 @@ async function desktop(browser) {
   check('death screen offers respawn', await until(page, () => !!document.querySelector('[data-a=r]'), null, 4000));
   await page.click('[data-a=r]');
   check('respawn restores health at the waystone', await until(page, () => !window.__game.player.dead && window.__game.player.hp > 50, null, 3000));
+  // block puzzle with Diablo controls: lock on to a coffin, then click toward the direction to push
+  await ev(page, () => { const g = window.__game; g.enterChamber('ossuary', 'from_nave'); g.chamber.enemies.length = 0; g.player.invuln = true; g.player.x = 16.5; g.player.z = 10.5; window.__app.view.cam.snap = true; });
+  await sleep(1500);
+  const bpos = await screenOf(19.5, 8.5, 0.4);
+  await page.mouse.move(bpos.x, bpos.y); await sleep(250);
+  check('hovering a coffin picks it as a block', await ev(page, () => window.__app.input.hover?.kind === 'block'));
+  await page.mouse.click(bpos.x, bpos.y);
+  check('clicking a coffin locks onto it', await ev(page, () => window.__app.input.lockedBlock()?.id === 'o_b1'));
+  const east = await screenOf(23.5, 8.5);
+  await page.mouse.click(east.x, east.y);
+  check('clicking toward the east pushes the coffin one cell east (hero walks round to push)', await until(page, () => window.__game.chamber.props.get('o_b1').cx === 20, null, 45000));
+  await page.mouse.click(bpos.x + 0, bpos.y).catch(() => {});
+  await page.keyboard.press('Escape');
+  check('Esc releases the block lock (and does not open the pause menu)', await ev(page, () => window.__app.input.lockedBlock() === null && window.__app.mode === 'play'));
   await ctx.close();
 }
 

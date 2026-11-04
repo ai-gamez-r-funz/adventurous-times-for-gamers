@@ -46,6 +46,9 @@ export class GameView {
     this.barGeo = new THREE.PlaneGeometry(1, 1);
     this.lockTarget = null;
     this.lockRing = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.05, 40), new THREE.MeshBasicMaterial({ color: 0xffd070, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false, depthTest: false }));
+    this.pushDir = null;
+    const ag = new THREE.BufferGeometry(); ag.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0.55, -0.4, 0, -0.1, 0.4, 0, -0.1, -0.15, 0, -0.1, -0.15, 0, -0.6, 0.15, 0, -0.6, 0.15, 0, -0.1], 3)); ag.setIndex([0, 2, 1, 3, 4, 5, 3, 5, 6]);
+    this.pushArrow = new THREE.Mesh(ag, new THREE.MeshBasicMaterial({ color: 0xffd070, transparent: true, opacity: 0.95, side: THREE.DoubleSide, depthTest: false })); this.pushArrow.renderOrder = 16; this.pushArrow.visible = false; this.scene.add(this.pushArrow);
     this.lockRing.rotation.x = -Math.PI / 2; this.lockRing.renderOrder = 15; this.lockRing.visible = false; this.scene.add(this.lockRing);
     this.setQuality(quality);
   }
@@ -385,6 +388,9 @@ export class GameView {
     this.telegraphs.update(g);
     const lk = this.lockTarget;
     this.lockRing.visible = !!lk;
+    const isBlock = lk?.t === 'block';
+    this.pushArrow.visible = !!(isBlock && this.pushDir);
+    if (isBlock && this.pushDir) { const d = this.pushDir; this.pushArrow.position.set(lk.x + d[0] * (1.05 + Math.sin(this.time * 6) * 0.06), 0.1, lk.z + d[1] * (1.05 + Math.sin(this.time * 6) * 0.06)); this.pushArrow.rotation.y = Math.atan2(d[0], d[1]); }
     if (lk) { const r = (lk.radius ?? 0.5) * 1.5 + Math.sin(this.time * 6) * 0.05; this.lockRing.position.set(lk.x, 0.06, lk.z); this.lockRing.scale.setScalar(r); this.lockRing.rotation.z = this.time * 1.5; }
     this.lights.update(dt, this.time, g.player);
     this.particles.update(dt); this.decals.update(dt); this.beams.update(dt);
@@ -427,6 +433,7 @@ export class GameView {
     for (const l of ch.loot) consider('loot', l, l.x, l.z, 0.6, 0.6, 0.2);
     for (const p of ch.interactables()) if (!p.kind) consider('interact', p, p.x, p.z, 0.7, p.t === 'waystone' ? 1.8 : 1.0, 0.1);
     for (const p of ch.hurtProps()) if (p.t !== 'brazier') consider('prop', p, p.x, p.z, 0.55, 0.9, 0.15);
+    for (const p of ch.props.values()) if (p.t === 'block' && !ch.puzzleOfBlock(p.id)?.solved) consider('block', p, p.x, p.z, 0.62, 0.9, 0.05);
     return { ground, hover: best };
   }
 

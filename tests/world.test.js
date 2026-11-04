@@ -3,6 +3,7 @@ import { newGame, run, tp, spawnAt, clearEnemies, gotoChamber, DT } from './help
 import { migrate, memoryStorage, SAVE_VERSION } from '../src/sim/save.js';
 import { Game } from '../src/sim/game.js';
 import { resolveHit } from '../src/sim/combat.js';
+import { solvePush } from '../src/sim/puzzles.js';
 
 const killAllEnc = (g) => { for (const e of g.chamber.enemies) if (!e.dead) { e.invuln = false; e.spawnT = 0; resolveHit(g, g.player, e, { move: { damage: 999, poise: 0, knockback: 0 }, mult: 1 }); } };
 
@@ -182,4 +183,47 @@ describe('save / load / migration', () => {
     const g2 = new Game({ storage: s, save: s.load(), fade: false });
     expect(g2.player.level).toBe(1); expect(g2.chamber.id).toBe('gate');
   });
+});
+
+describe('lock-on block pushing (mouse scheme)', () => {
+  it('a push command walks to the far side and slides the block exactly one cell; blocked pushes do nothing', () => {
+    const g = newGame(); gotoChamber(g, 'ossuary', 'from_nave'); clearEnemies(g); g.walkPush = false;
+    const b = g.chamber.props.get('o_b1');
+    tp(g, 15.5, 11.5);
+    g.step(DT, [{ t: 'push', id: 'o_b1', dx: 1, dz: 0 }]);
+    run(g, 5);
+    expect([b.cx, b.cz]).toEqual([20, 8]);
+    // push north into the room's wall: stays put
+    run(g, 0.4);
+    for (let i = 0; i < 4; i++) { g.step(DT, [{ t: 'push', id: 'o_b1', dx: 0, dz: -1 }]); run(g, 3); }
+    expect(b.cz).toBeGreaterThanOrEqual(5);
+    expect(g.chamber.grid.dyn[g.chamber.grid.idx(b.cx, b.cz)]).toBe(1);
+  });
+
+  it('walk-pushing is disabled in the mouse scheme (no accidental pushes while click-moving)', () => {
+    const g = newGame(); gotoChamber(g, 'ossuary', 'from_nave'); clearEnemies(g); g.walkPush = false;
+    const b = g.chamber.props.get('o_b1'); const hx = b.cx;
+    tp(g, b.cx - 0.65, b.cz + 0.5);
+    run(g, 1.2, () => [{ t: 'moveDir', x: 1, z: 0 }]);
+    expect(b.cx).toBe(hx);
+  });
+
+  it('SOLVES the Ossuary using only lock-on push commands (solver plan replayed through the real controller)', () => {
+    const g = newGame(); gotoChamber(g, 'ossuary', 'from_nave'); clearEnemies(g); g.walkPush = false;
+    const def = g.chamber.def, gr = g.chamber.grid, pzd = def.entities.find((e) => e.kind === 'push_plates'), bd = pzd.bounds;
+    const free = (x, z) => gr.isFloor(x, z) && !gr.solid[gr.idx(x, z)] && x >= bd.x && z >= bd.z && x < bd.x + bd.w && z < bd.z + bd.h;
+    const pos = (id) => { const e = def.entities.find((x) => x.id === id); return [e.x, e.z]; };
+    const sol = solvePush({ free, blocks: pzd.blocks.map(pos), plates: pzd.plates.map(pos), player: [15, 11], maxStates: 1500000 });
+    expect(sol.solved).toBe(true);
+    tp(g, 15.5, 11.5);
+    for (const mv of sol.moves) {
+      const b = g.chamber.props.get(pzd.blocks[mv.block]); const before = [b.cx, b.cz];
+      g.step(DT, [{ t: 'push', id: b.id, dx: mv.dir[0], dz: mv.dir[1] }]);
+      let t = 0; while (t < 12 && b.cx === before[0] && b.cz === before[1]) { g.step(DT); t += DT; }
+      expect([b.cx, b.cz], `push ${JSON.stringify(mv)}`).toEqual([before[0] + mv.dir[0], before[1] + mv.dir[1]]);
+      run(g, 0.3);
+    }
+    expect(g.chamber.puzzleOf('o_blocks').solved).toBe(true);
+    expect(g.chamber.gateClosed('o_gate')).toBe(false);
+  }, 90000);
 });

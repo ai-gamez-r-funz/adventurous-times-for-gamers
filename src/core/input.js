@@ -48,15 +48,21 @@ export class Input {
   // ---------------------------------------------------------------- targeting helpers
   lockedEntity() {
     const g = this.getGame(); if (!g || !this.lockId) return null;
-    const t = g.chamber.byId(this.lockId);
+    const t = g.chamber.byId(this.lockId) ?? g.chamber.props.get(this.lockId);
     return t && !t.dead && !(t.prop && t.broken) ? t : null;
+  }
+  /** The block currently grabbed for pushing (lock-on + click to push), if any. */
+  lockedBlock() { const t = this.lockedEntity(); return t?.t === 'block' ? t : null; }
+  /** Axis-aligned push direction from the block toward the cursor. */
+  pushDirection(b) { const dx = this.ground.x - b.x, dz = this.ground.z - b.z; return Math.abs(dx) >= Math.abs(dz) ? [Math.sign(dx) || 1, 0] : [0, Math.sign(dz) || 1]; }
+  pushLocked() { const b = this.lockedBlock(); if (!b) return false; const d = this.pushDirection(b); this.push({ t: 'push', id: b.id, dx: d[0], dz: d[1] }); return true;
   }
   /** Where a skill aims: the locked target if any, else a hovered enemy while holding position, else the cursor. */
   aimPoint() {
     const g = this.getGame();
     if (this.touchMode || !this.pointer.has) return this.touchAim(g);
     const lk = this.lockedEntity();
-    if (lk && !this.standing) return { x: lk.x, z: lk.z };
+    if (lk && lk.t !== 'block' && !this.standing) return { x: lk.x, z: lk.z };
     if (this.hover?.kind === 'enemy') return { x: this.hover.entity.x, z: this.hover.entity.z };
     return this.ground;
   }
@@ -72,10 +78,15 @@ export class Input {
     this.standKey = e.shiftKey; this.syncStand(); // the hold state must be current before this click's command
     const r = this.updatePick(e.clientX, e.clientY);
     if (e.button === 0) { this.lmb = true; this.leftClick(r.hover, e.shiftKey); }
-    else if (e.button === 2) { this.rmb = true; this.skillSlot(1); }
+    else if (e.button === 2) { this.rmb = true; if (this.lockedBlock()) { this.unlock(); this.push({ t: 'stop' }); } else this.skillSlot(1); }
   }
   leftClick(h, shift = this.standing) {
     const use = h && (h.kind === 'loot' || h.kind === 'interact');
+    if (h?.kind === 'block') { // click a block to grab it; click it again to let go
+      if (this.lockId === h.id) { this.unlock(); this.push({ t: 'stop' }); } else this.lock(h.id);
+      return;
+    }
+    if (this.lockedBlock() && !shift) { this.pushLocked(); return; } // grabbed block: any click pushes toward the cursor
     if (shift) { // hold position: only attack/cast toward the cursor, never walk
       if (use) { this.push({ t: 'interact', id: h.id }); return; }
       if (h && (h.kind === 'enemy' || h.kind === 'prop')) this.lock(h.id);
@@ -123,7 +134,7 @@ export class Input {
     const key = `${x.toFixed(2)},${z.toFixed(2)}`;
     if (key === this.lastDir) return;
     this.lastDir = key;
-    if (x || z) this.unlock();
+    if ((x || z) && !this.lockedBlock()) this.unlock(); else if (x || z) { this.unlock(); }
     this.push({ t: 'moveDir', x, z });
   }
 
@@ -174,18 +185,21 @@ export class Input {
     this.syncStand();
     if (this.lockId && !this.lockedEntity()) this.lockId = null;
     const h = this.hover;
-    if (this.lmb && !this.touchMode && this.enabled) {
+    if (this.lmb && !this.touchMode && this.enabled && this.lockedBlock() && !(h && h.kind === 'block')) this.pushLocked(); // hold to keep pushing
+    else if (this.lmb && !this.touchMode && this.enabled) {
       if (this.standing || this.scheme === 'wasd') {
         if (!(h && (h.kind === 'loot' || h.kind === 'interact'))) this.skillSlot(0); // hold to keep attacking in place
       } else if (h && (h.kind === 'enemy' || h.kind === 'prop')) {
         if (this.lockId !== h.id) { this.lock(h.id); this.push({ t: 'attack', id: h.id, slot: 0 }); }
       } else if (this.lockId) {
         // sticky lock: the cursor drifted off the enemy but the button is still down, so keep following/attacking it
-        const lk = this.lockedEntity(); if (lk && g.player.intent.kind !== 'attack') this.push({ t: 'attack', id: lk.id, slot: 0 });
+        const lk = this.lockedEntity(); if (lk && lk.t !== 'block' && g.player.intent.kind !== 'attack') this.push({ t: 'attack', id: lk.id, slot: 0 });
       } else this.push({ t: 'moveTo', x: this.ground.x, z: this.ground.z, hold: true });
     }
+    const lb = this.lockedBlock();
     this.view.lockTarget = this.lockedEntity();
-    this.canvas.style.cursor = h?.kind === 'enemy' || h?.kind === 'prop' ? 'crosshair' : h ? 'pointer' : this.standing ? 'not-allowed' : 'default';
+    this.view.pushDir = lb ? this.pushDirection(lb) : null;
+    this.canvas.style.cursor = h?.kind === 'enemy' || h?.kind === 'prop' ? 'crosshair' : this.lockedBlock() ? 'move' : h ? 'pointer' : this.standing ? 'not-allowed' : 'default';
   }
   clear() { this.cmds = []; this.keys.clear(); this.lmb = this.rmb = false; this.stick.active = false; this.lastDir = ''; this.lockId = null; this.standSent = false; this.standKey = false; }
 }

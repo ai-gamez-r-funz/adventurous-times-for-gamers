@@ -132,6 +132,7 @@ export class Chamber {
     this.game.save('puzzle');
   }
   puzzleOf(id) { return this.puzzles.find((p) => p.id === id); }
+  puzzleOfBlock(id) { return this.puzzles.find((p) => p.def.kind === 'push_plates' && p.def.blocks.includes(id)); }
 
   // ------------------------------------------------------------ props that can be hurt
   isHurtable(p) {
