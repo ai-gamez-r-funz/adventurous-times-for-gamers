@@ -162,7 +162,7 @@ export const CHAMBERS = {
       { t: 'altar', id: 'o_altar', x: 34, z: 11, sigil: 'bone', hidden: true, reqFlag: 'o_crypt_cleared' },
       { t: 'chest', id: 'o_chest', x: 33, z: 15, loot: { count: 2, ilvl: 4, min: 'magic', gold: [40, 70], potions: 1, unique: 'ossuary_plate' }, hidden: true, hiddenUntil: 'o_crypt_cleared' },
       { t: 'encounter', id: 'o_crypt', trigger: { x: 31, z: 8, w: 4, h: 8 }, gates: ['o_gate'],
-        waves: [{ delay: 0.8, enemies: [{ def: 'husk', x: 33, z: 8, elite: true }, { def: 'archer', x: 35, z: 14 }, { def: 'archer', x: 31, z: 15 }] }],
+        waves: [{ delay: 0.8, enemies: [{ def: 'husk', x: 33, z: 8, elite: true }, { def: 'archer', x: 35, z: 14 }, { def: 'archer', x: 31, z: 13 }] }],
         onClear: { flag: 'o_crypt_cleared', reveal: ['o_altar', 'o_chest'], toast: 'The Ossuary is silent. The Sigil of Bone is yours to take.' } },
     ],
   },

@@ -277,7 +277,7 @@ export class Hud {
     const near = p.dead ? null : g.chamber.nearestInteractable(p);
     const pe = this.q('#prompt');
     if (input.lockedBlock() && !this.panelOpen) {
-      set('prompt', 'push', () => { pe.innerHTML = '<kbd>Click</kbd>push toward cursor · hold to repeat · click block / Esc to release'; }); pe.classList.remove('hidden');
+      set('prompt', 'push', () => { pe.innerHTML = '<kbd>Click</kbd>push toward cursor · hold to repeat · <kbd>Right-click</kbd> or <kbd>Esc</kbd> to cancel'; }); pe.classList.remove('hidden');
     } else if (near && !this.panelOpen) {
       const txt = near.kind ? (near.kind === 'item' ? `Pick up ${esc(near.item.name)}` : 'Pick up') : (PROMPTS[near.t] ?? 'Interact');
       set('prompt', txt, (t) => { pe.innerHTML = `<kbd>E</kbd>${t}`; }); pe.classList.remove('hidden');
