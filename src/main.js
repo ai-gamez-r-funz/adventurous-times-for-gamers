@@ -16,7 +16,7 @@ if (params.get('view') === 'gallery') startGallery(canvas);
 else boot();
 
 function loadSettings() {
-  const d = { volume: 0.7, muted: false, quality: 'auto', reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, labels: true };
+  const d = { volume: 0.7, muted: false, quality: 'auto', reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, labels: true, controls: 'mouse' };
   let o = d; try { o = { ...d, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}') }; } catch { /* ignore */ }
   if (params.get('q')) o.quality = params.get('q');
   return o;
@@ -37,7 +37,7 @@ function boot() {
   window.__app = app;
 
   const applySettings = () => {
-    audio.setVolume(settings.volume); audio.setMuted(settings.muted);
+    audio.setVolume(settings.volume); audio.setMuted(settings.muted); input?.setScheme(settings.controls);
     view.reducedMotion = settings.reducedMotion; document.body.classList.toggle('reduced', settings.reducedMotion);
     const q = settings.quality === 'auto' ? (coarse ? 'low' : (view.autoQ ?? 'high')) : settings.quality;
     if (q !== view.quality) view.setQuality(q);
@@ -46,7 +46,7 @@ function boot() {
   applySettings();
 
   const getGame = () => (mode === 'title' ? null : game);
-  input = new Input(canvas, view, getGame); app.input = input;
+  input = new Input(canvas, view, getGame); app.input = input; input.setScheme(settings.controls);
   input.onZoom = (d) => view.setZoom(view.cam.zoom + d);
   hud = new Hud(uiRoot, { view, input, audio, settings, onMenu: () => openPause(), onLore: (e) => openLore(e.id), onPanel: () => { input.clear(); } }); app.hud = hud;
   window.addEventListener('pointerdown', () => audio.unlock(), { once: false });
@@ -57,7 +57,7 @@ function boot() {
     const A = audio, pan = (x) => Math.max(-0.8, Math.min(0.8, (x - g.player.x) * 0.08));
     g.on('swing', (e) => { const m = e.move, a = e.actor; A.play(m.sfx ? (m.sfx === 'swing' && a.def?.tags?.includes('heavy') ? 'swing_heavy' : m.sfx) : 'swing', { pan: pan(a.x), vol: a.kind === 'player' ? 1 : 0.8 }); });
     g.on('windup', (e) => { if (e.actor.kind === 'enemy' && ['rite', 'summon', 'toll'].includes(e.move.sfx)) A.play(e.move.sfx, { pan: pan(e.actor.x) }); });
-    g.on('roll', () => A.play('roll')); g.on('levelup', () => A.play('levelup')); g.on('chestOpen', () => A.play('chest')); g.on('break', (e) => A.play('break', { pan: pan(e.prop.x), vol: e.hit ? 0.5 : 1 }));
+    g.on('levelup', () => A.play('levelup')); g.on('chestOpen', () => A.play('chest')); g.on('break', (e) => A.play('break', { pan: pan(e.prop.x), vol: e.hit ? 0.5 : 1 }));
     g.on('gate', () => A.play('gate')); g.on('rest', () => A.play('rest')); g.on('denied', () => A.play('denied')); g.on('aggro', (e) => A.play('aggro', { pan: pan(e.actor.x), vol: 0.6 }));
     g.on('death', (e) => A.play('death', { pan: pan(e.actor.x) })); g.on('unseal', () => A.play('unseal')); g.on('victory', () => A.play('victory'));
     g.on('boss', (e) => { if (e.kind === 'shift') A.play('toll'); });

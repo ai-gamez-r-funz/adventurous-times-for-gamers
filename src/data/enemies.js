@@ -8,9 +8,9 @@ export const ENEMIES = {
     hp: 62, damage: 9, speed: 2.55, radius: 0.42, armor: 4, poise: 34, xp: 14, aggro: 9.5, leash: 22,
     drops: { gold: [2, 7], potion: 0.07, item: 0.1 },
     moves: [
-      { id: 'husk_claw', name: 'Rake', tags: ['melee'], minR: 0, maxR: 1.9, weight: 3, startup: 0.55, active: 0.12, recovery: 0.7, cooldown: 0.9,
+      { id: 'husk_claw', name: 'Rake', tags: ['melee'], minR: 0, maxR: 1.9, weight: 3, startup: 0.55, active: 0.12, recovery: 0.7, cooldown: 2.0,
         shape: { type: 'arc', range: 2.05, arc: 1.7 }, damage: 1.0, poise: 12, knockback: 1.0, anim: 'slash', track: 0.65, sfx: 'swing' },
-      { id: 'husk_lunge', name: 'Lunge', tags: ['melee'], minR: 2.3, maxR: 4.3, weight: 1.3, startup: 0.78, active: 0.2, recovery: 0.95, cooldown: 4.5,
+      { id: 'husk_lunge', name: 'Lunge', tags: ['melee'], minR: 2.3, maxR: 4.3, weight: 1.3, startup: 0.78, active: 0.2, recovery: 0.95, cooldown: 7,
         shape: { type: 'line', length: 2.7, width: 1.1 }, move: { type: 'lunge', dist: 2.6 }, damage: 1.3, poise: 18, knockback: 1.6, anim: 'thrust', track: 0.55, sfx: 'swing' },
     ],
   },
@@ -19,7 +19,7 @@ export const ENEMIES = {
     hp: 42, damage: 10, speed: 2.9, radius: 0.38, armor: 2, poise: 22, xp: 17, aggro: 12, leash: 24, keepRange: [6.2, 9.8],
     drops: { gold: [3, 9], potion: 0.1, item: 0.12 },
     moves: [
-      { id: 'archer_shot', name: 'Bone Arrow', tags: ['ranged'], minR: 2.5, maxR: 13, weight: 3, startup: 0.95, active: 0.05, recovery: 0.8, cooldown: 1.9, needsLos: true,
+      { id: 'archer_shot', name: 'Bone Arrow', tags: ['ranged'], minR: 2.5, maxR: 13, weight: 3, startup: 0.95, active: 0.05, recovery: 0.8, cooldown: 3.4, needsLos: true,
         shape: { type: 'projectile', speed: 12.5, radius: 0.22, life: 1.4, pierce: 0 }, damage: 1.0, poise: 8, knockback: 0.5, anim: 'shoot', track: 0.75, telegraph: 'aim', sfx: 'bow' },
     ],
   },
@@ -28,9 +28,9 @@ export const ENEMIES = {
     hp: 54, damage: 14, speed: 2.7, radius: 0.4, armor: 3, poise: 24, xp: 24, aggro: 11, leash: 22, keepRange: [5, 9],
     drops: { gold: [4, 12], potion: 0.14, item: 0.16 },
     moves: [
-      { id: 'cultist_rite', name: 'Ember Rite', tags: ['ranged'], minR: 2, maxR: 11, weight: 2.4, startup: 1.3, active: 0.15, recovery: 0.85, cooldown: 3.4, needsLos: true,
+      { id: 'cultist_rite', name: 'Ember Rite', tags: ['ranged'], minR: 2, maxR: 11, weight: 2.4, startup: 1.3, active: 0.15, recovery: 0.85, cooldown: 5, needsLos: true,
         shape: { type: 'hazard', pattern: 'target', radius: 1.75, lock: 0.62 }, damage: 1.5, poise: 20, knockback: 1.8, anim: 'cast_aoe', sfx: 'rite' },
-      { id: 'cultist_bolt', name: 'Ash Bolt', tags: ['ranged'], minR: 3, maxR: 12, weight: 1.4, startup: 0.7, active: 0.05, recovery: 0.7, cooldown: 2.2, needsLos: true,
+      { id: 'cultist_bolt', name: 'Ash Bolt', tags: ['ranged'], minR: 3, maxR: 12, weight: 1.4, startup: 0.7, active: 0.05, recovery: 0.7, cooldown: 4, needsLos: true,
         shape: { type: 'projectile', speed: 7.5, radius: 0.36, life: 2.2, pierce: 0, color: 0xd0562a }, damage: 0.9, poise: 8, knockback: 0.6, anim: 'cast', track: 0.8, telegraph: 'aim', sfx: 'ember' },
     ],
   },

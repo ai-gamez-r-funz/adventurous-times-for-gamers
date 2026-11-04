@@ -43,27 +43,29 @@ export class Screens {
   }
   settings({ s, onChange, onBack }) {
     return this.show(`<div class="panel center"><h2><span>Settings</span></h2><div class="body">
+      <div class="row"><label for="s-ctl">Controls</label><select id="s-ctl"><option value="mouse">Mouse (Diablo-style)</option><option value="wasd">WASD + mouse aim</option></select></div>
       <div class="row"><label for="s-vol">Volume</label><input id="s-vol" type="range" min="0" max="100" value="${Math.round(s.volume * 100)}"></div>
       <div class="row"><label for="s-mute">Mute</label><input id="s-mute" type="checkbox" ${s.muted ? 'checked' : ''}></div>
       <div class="row"><label for="s-q">Graphics</label><select id="s-q"><option value="auto">Auto</option><option value="high">High (bloom)</option><option value="low">Low (fast)</option></select></div>
       <div class="row"><label for="s-rm">Reduced motion (no shake / flashes)</label><input id="s-rm" type="checkbox" ${s.reducedMotion ? 'checked' : ''}></div>
       <div class="row"><label for="s-lab">Always show item labels</label><input id="s-lab" type="checkbox" ${s.labels ? 'checked' : ''}></div>
       <div style="text-align:center;margin-top:12px"><button class="btn" data-a="b">Back</button></div></div></div>`, (el) => {
-      el.classList.add('dim'); el.querySelector('#s-q').value = s.quality;
-      const upd = () => onChange({ volume: el.querySelector('#s-vol').value / 100, muted: el.querySelector('#s-mute').checked, quality: el.querySelector('#s-q').value, reducedMotion: el.querySelector('#s-rm').checked, labels: el.querySelector('#s-lab').checked });
+      el.classList.add('dim'); el.querySelector('#s-q').value = s.quality; el.querySelector('#s-ctl').value = s.controls ?? 'mouse';
+      const upd = () => onChange({ volume: el.querySelector('#s-vol').value / 100, muted: el.querySelector('#s-mute').checked, quality: el.querySelector('#s-q').value, reducedMotion: el.querySelector('#s-rm').checked, labels: el.querySelector('#s-lab').checked, controls: el.querySelector('#s-ctl').value });
       for (const i of el.querySelectorAll('input,select')) i.oninput = i.onchange = upd;
       el.querySelector('[data-a=b]').onclick = onBack;
     });
   }
   help({ onBack }) {
     return this.show(`<div class="panel center"><h2><span>Controls</span></h2><div class="body"><div class="kv">
-      <b>Left click</b><span>Move · click an enemy to attack · click loot / objects to use them</span>
-      <b>Hold left</b><span>Keep moving toward the cursor</span><b>Right click</b><span>Second skill at the cursor</span>
-      <b>1 2 3 4 / Q R</b><span>Skills (unlock as you level)</span><b>Space</b><span>Dodge roll — brief invulnerability. Learn enemy telegraphs!</span>
-      <b>W A S D</b><span>Move (screen-relative)</span><b>E</b><span>Interact: chests, tablets, waystones, braziers…</span>
+      <b>Left click</b><span>Move · click an enemy to attack and lock on (it follows the target) · click loot / objects to use them</span>
+      <b>Hold left</b><span>Keep moving toward the cursor, or keep attacking the locked enemy</span><b>Right click</b><span>Second skill (aims at your locked target)</span>
+      <b>1 2 3 4 / Q R</b><span>Skills (unlock as you level)</span><b>Shift (hold)</b><span>HOLD POSITION: you never move; clicks only attack / cast toward the cursor</span>
+      <b>E</b><span>Interact: chests, tablets, waystones, braziers…</span>
       <b>F / G</b><span>Life / resource potion</span><b>I · C · M · Esc</b><span>Inventory · Codex · Mute · Menu</span>
-      <b>Shift + click</b><span>Attack in place without moving</span><b>Mouse wheel</b><span>Zoom</span><b>Touch</b><span>Left thumb: stick · right: buttons · tap to move / target</span></div>
-      <p class="help" style="margin-top:12px"><b>Tips:</b> red shapes on the floor are attacks about to land — step out or roll through. Push coffins by walking into them. Waystones heal you and set your respawn. Cracked stone hides relics.</p>
+      <b>Defence</b><span>Passive: <b>Dodge</b> avoids a hit, <b>Block</b> halves one. Gear and class raise them. Escape with movement and Ember Blink!</span>
+      <b>Settings → Controls</b><span>Switch to WASD + mouse aim (LMB = primary skill) if you prefer</span><b>Mouse wheel</b><span>Zoom</span><b>Touch</b><span>Left thumb: stick · right: buttons · tap to move / target</span></div>
+      <p class="help" style="margin-top:12px"><b>Tips:</b> red shapes on the floor are attacks about to land — step out of them. Push coffins by walking into them. Waystones heal you and set your respawn. Cracked stone hides relics.</p>
       <div style="text-align:center"><button class="btn" data-a="b">Back</button></div></div></div>`, (el) => { el.classList.add('dim'); el.querySelector('[data-a=b]').onclick = onBack; });
   }
   death({ onRespawn, onTitle }) {

@@ -22,9 +22,9 @@ export const BASES = {
   bone_staff: { id: 'bone_staff', slot: 'weapon', kind: 'staff', name: 'Bone Staff', classes: ['cinderwitch'], tier: 1, stats: { dmg: [13, 20] } },
   choir_staff: { id: 'choir_staff', slot: 'weapon', kind: 'staff', name: 'Choirmaster Staff', classes: ['cinderwitch'], tier: 2, stats: { dmg: [19, 28] } },
   // off-hand
-  splintered_shield: { id: 'splintered_shield', slot: 'offhand', kind: 'shield', name: 'Splintered Shield', classes: ['oathbound'], tier: 0, stats: { armor: 8 } },
-  tower_shield: { id: 'tower_shield', slot: 'offhand', kind: 'shield', name: 'Tower Shield', classes: ['oathbound'], tier: 1, stats: { armor: 17 } },
-  warden_shield: { id: 'warden_shield', slot: 'offhand', kind: 'shield', name: "Warden's Aegis", classes: ['oathbound'], tier: 2, stats: { armor: 28, hp: 20 } },
+  splintered_shield: { id: 'splintered_shield', slot: 'offhand', kind: 'shield', name: 'Splintered Shield', classes: ['oathbound'], tier: 0, stats: { armor: 8, block: 8 } },
+  tower_shield: { id: 'tower_shield', slot: 'offhand', kind: 'shield', name: 'Tower Shield', classes: ['oathbound'], tier: 1, stats: { armor: 17, block: 14 } },
+  warden_shield: { id: 'warden_shield', slot: 'offhand', kind: 'shield', name: "Warden's Aegis", classes: ['oathbound'], tier: 2, stats: { armor: 28, hp: 20, block: 20 } },
   cracked_focus: { id: 'cracked_focus', slot: 'offhand', kind: 'focus', name: 'Cracked Focus', classes: ['cinderwitch'], tier: 0, stats: { mana: 12 } },
   censer_orb: { id: 'censer_orb', slot: 'offhand', kind: 'focus', name: 'Censer Orb', classes: ['cinderwitch'], tier: 1, stats: { mana: 24, dmgPct: 4 } },
   choir_tome: { id: 'choir_tome', slot: 'offhand', kind: 'focus', name: 'Choir Tome', classes: ['cinderwitch'], tier: 2, stats: { mana: 36, dmgPct: 8 } },
@@ -70,13 +70,15 @@ export const AFFIXES = {
   crit: { id: 'crit', stat: 'crit', prefix: null, suffix: ['of Ruin', 'of Wounding'], r: [2, 6], slots: ['weapon', 'amulet', 'ring', 'helm'], fmt: (v) => `+${v}% Crit Chance` },
   speed: { id: 'speed', stat: 'speed', prefix: null, suffix: ['of the Hare', 'of Haste'], r: [3, 8], slots: ['chest', 'helm', 'ring', 'amulet'], fmt: (v) => `+${v}% Move Speed` },
   atkSpeed: { id: 'atkSpeed', stat: 'atkSpeed', prefix: ['Swift', 'Nimble'], suffix: null, r: [3, 8], slots: ['weapon', 'ring', 'amulet'], fmt: (v) => `+${v}% Attack Speed` },
+  dodge: { id: 'dodge', stat: 'dodge', prefix: ['Elusive', 'Fleet'], suffix: null, r: [2, 5], slots: ['chest', 'helm', 'ring', 'amulet', 'offhand'], fmt: (v) => `+${v}% Dodge` },
+  block: { id: 'block', stat: 'block', prefix: ['Stalwart'], suffix: null, r: [3, 7], slots: ['offhand'], fmt: (v) => `+${v}% Block` },
   leech: { id: 'leech', stat: 'leech', prefix: null, suffix: ['of the Leech', 'of Thirst'], r: [1, 2.5], slots: ['weapon', 'amulet', 'ring'], fmt: (v) => `+${v} Life per Hit` },
   manaRegen: { id: 'manaRegen', stat: 'manaRegen', prefix: null, suffix: ['of Renewal', 'of the Spring'], r: [0.6, 1.6], slots: ['offhand', 'helm', 'amulet', 'ring', 'chest'], fmt: (v) => `+${v}/s Resource Regen` },
 };
 export const STAT_LABEL = {
   dmgPct: (v) => `+${v}% Damage`, dmgFlat: (v) => `+${v} Damage`, armor: (v) => `+${v} Armor`, hp: (v) => `+${v} Life`, mana: (v) => `+${v} Resource`,
   crit: (v) => `+${v}% Crit Chance`, speed: (v) => `+${v}% Move Speed`, atkSpeed: (v) => `+${v}% Attack Speed`, leech: (v) => `+${v} Life per Hit`,
-  manaRegen: (v) => `+${v}/s Resource Regen`,
+  manaRegen: (v) => `+${v}/s Resource Regen`, dodge: (v) => `+${v}% Dodge`, block: (v) => `+${v}% Block`,
 };
 export const RARE_NAMES = {
   a: ['Gloom', 'Dirge', 'Sorrow', 'Pale', 'Wraith', 'Cinder', 'Hollow', 'Mourn', 'Ashen', 'Veil', 'Rue', 'Thorn'],

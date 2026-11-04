@@ -4,7 +4,9 @@ import { dirOf, faceOf, lerpAngle, angleDiff, clamp } from '../core/util.js';
 import { makeAction, updateAction, turnToward } from './actors.js';
 import { cancelAction } from './combat.js';
 
-const MELEE_TOKENS = 2;
+// Early chambers are paced gently: slower decisions and only one melee attacker at a time.
+const pacing = (e) => (e.def.boss ? 1 : e.level <= 1 ? 2.3 : e.level <= 2 ? 1.8 : e.level <= 3 ? 1.4 : e.level <= 4 ? 1.2 : 1);
+const tokenCap = (e) => (e.level <= 2 ? 1 : 2);
 
 export const slowMult = (a) => (a.status.slow ? 1 - a.status.slow.mag : 1);
 
@@ -109,7 +111,7 @@ export function updateEnemy(game, e, dt) {
 
   if (!ai.alerted) {
     const range = ai.sleep ? def.aggro * 0.5 : def.aggro;
-    if (!p.dead && dist < range && los) { ai.alerted = true; ai.sleep = false; alertGroup(game, e); game.emit('aggro', { actor: e }); }
+    if (!p.dead && dist < range && los) { ai.alerted = true; ai.sleep = false; ai.pause = Math.max(ai.pause, 1.0 * pacing(e)); alertGroup(game, e); game.emit('aggro', { actor: e }); }
     else return;
   }
   if (p.dead) { ai.alerted = false; ai.state = 'return'; }
@@ -130,11 +132,11 @@ export function updateEnemy(game, e, dt) {
   // choose an attack if the decision pause has elapsed
   if (ai.pause <= 0 && moves.length) {
     const wantsToken = (m) => m.tags.includes('melee') && !def.boss;
-    const pool = moves.filter((m) => !wantsToken(m) || ch.requestToken(e, MELEE_TOKENS));
+    const pool = moves.filter((m) => !wantsToken(m) || ch.requestToken(e, tokenCap(e)));
     if (pool.length) {
       const m = game.rng.weighted(pool, (x) => (x.weight || 0.01) * (ai.lastMove === x.id ? 0.4 : 1));
       ai.lastMove = m.id;
-      if (wantsToken(m)) ch.requestToken(e, MELEE_TOKENS, true);
+      if (wantsToken(m)) ch.requestToken(e, tokenCap(e), true);
       makeAction(game, e, m, { x: p.x, z: p.z });
       ai.state = 'action';
       return;
@@ -164,7 +166,7 @@ export function updateEnemy(game, e, dt) {
   // melee positioning
   if (dist > reach || !los) {
     const hasToken = ai.token;
-    const hold = !def.boss && !hasToken && dist < 4.2 && ch.meleeCount() >= MELEE_TOKENS && los;
+    const hold = !def.boss && !hasToken && dist < 4.2 && ch.meleeCount() >= tokenCap(e) && los;
     if (hold) {
       // wait for a free attack slot by circling at range
       const side = { x: -(p.z - e.z) / dist * ai.strafe, z: (p.x - e.x) / dist * ai.strafe };
@@ -196,7 +198,7 @@ function onActionDone(game, e, wasShift) {
     if (next && d <= next.maxR + 0.8) { makeAction(game, e, next, { x: game.player.x, z: game.player.z }, { chained: true }); return; }
   }
   const base = def.boss ? game.rng.range(0.25, 0.6) : def.role === 'ranged' || def.role === 'caster' ? game.rng.range(0.3, 0.8) : game.rng.range(0.35, 0.95);
-  ai.pause = base / (e.elite === 'frenzied' ? 1.4 : 1);
+  ai.pause = (base * pacing(e)) / (e.elite === 'frenzied' ? 1.4 : 1);
   ai.t = 0;
 }
 
