@@ -66,3 +66,8 @@ Design rules taken from the repo's skills (`.claude/skills`):
 ## Verification
 Unit/sim tests: `npm test`. Browser playthrough with real mouse/keyboard/touch: start `npm run dev`, then
 `node tests/e2e/playthrough.mjs` (needs Playwright + Chromium).
+Built using Claude
+
+Foundation is Three.js
+
+Skills from https://github.com/MengTo/Skills/tree/main
