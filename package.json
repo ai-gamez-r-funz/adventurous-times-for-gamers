@@ -1,0 +1,21 @@
+{
+  "name": "emberhollow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Emberhollow — an isometric gothic action-RPG dungeon crawler built with Three.js",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "test": "vitest run",
+    "check": "npm test && npm run build"
+  },
+  "dependencies": {
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0"
+  }
+}

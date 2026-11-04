@@ -1,0 +1,11 @@
+import { CHAMBERS } from '../src/data/chambers.js';
+import { buildGrid } from '../src/sim/grid.js';
+import { solvePush } from '../src/sim/puzzles.js';
+const def = CHAMBERS.ossuary;
+const g = buildGrid(def);
+const pz = def.entities.find((e) => e.kind === 'push_plates');
+const bnd = pz.bounds ?? { x: 15, z: 5, w: 13, h: 14 };
+const free = (x, z) => g.isFloor(x, z) && !g.solid[g.idx(x, z)] && x >= bnd.x && z >= bnd.z && x < bnd.x + bnd.w && z < bnd.z + bnd.h;
+const pos = (id) => { const e = def.entities.find((x) => x.id === id); return [e.x, e.z]; };
+const r = solvePush({ free, blocks: pz.blocks.map(pos), plates: pz.plates.map(pos), player: [15, 11], maxStates: 2000000 });
+console.log(r);
