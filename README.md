@@ -4,6 +4,8 @@ An isometric, real-time gothic action-RPG dungeon crawler built with **Three.js*
 textures and audio are procedural). Diablo-style click-to-move combat, loot and level-ups, broken into
 Zelda/Tunic-style **chambers** with puzzles, secrets and a boss.
 
+Play at [Github pages | https://ai-gamez-r-funz.github.io/adventurous-times-for-gamers/]
+
 ```bash
 npm install
 npm run dev        # http://localhost:5173
