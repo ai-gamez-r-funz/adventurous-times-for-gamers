@@ -190,7 +190,7 @@ export function updatePlayer(game, p, dt) {
         p.face = lerpAngle(p.face, faceOf(t.x - p.x, t.z - p.z), 0.6);
         if (!tryUseSkill(game, p, it.slot ?? 0, t.x, t.z)) { /* on cooldown/resource: face target and wait */ }
         else updateAction(game, p, 0);
-      } else steerPlayer(game, p, t.x, t.z, dt, Math.max(0.4, reach * 0.8));
+      } else steerPlayer(game, p, t.x, t.z, dt, canSee ? Math.max(0.4, reach * 0.8) : 0.5); // no line of sight: keep closing until a shot is clear
       break;
     }
     case 'interact': {

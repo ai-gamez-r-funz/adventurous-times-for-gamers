@@ -326,6 +326,8 @@ export class Chamber {
   onEnemyDeath(a) {
     for (const enc of this.encounters) enc.alive = enc.alive.filter((id) => id !== a.id);
     if (a.def.boss) {
+      // the Bishop's summoned husks crumble with him, so the encounter can resolve
+      for (const e of this.enemies) if (!e.dead && e.parentId === a.id) { e.dead = true; e.hp = 0; e.state = 'dead'; e.deadT = 0; this.game.emit('death', { actor: e, killer: null }); }
       this.game.emit('boss', { kind: 'dead', actor: a });
     }
   }

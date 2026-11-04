@@ -49,7 +49,7 @@ export const ENEMIES = {
   },
   bishop: {
     id: 'bishop', name: 'The Hollow Bishop', rig: 'bishop', role: 'boss', tags: ['undead', 'boss', 'melee', 'ranged'],
-    hp: 1500, damage: 17, speed: 2.5, radius: 0.78, armor: 24, poise: 300, xp: 900, aggro: 40, leash: 99, boss: true,
+    hp: 1250, damage: 17, speed: 2.5, radius: 0.78, armor: 24, poise: 300, xp: 900, aggro: 40, leash: 99, boss: true,
     drops: { gold: [120, 200], potion: 1, item: 1 },
     phases: [
       { id: 'p1', from: 1.0, moves: ['bishop_mace', 'bishop_backswing', 'bishop_censer', 'bishop_slam'], speedMult: 1, recoveryMult: 1 },
@@ -77,5 +77,5 @@ export const ENEMIES = {
 };
 
 export const ELITE = { hp: 2.4, damage: 1.25, scale: 1.22, xp: 3, affixes: ['frenzied', 'bulwark', 'vengeful'] };
-export const enemyScale = (level) => 1 + 0.2 * (level - 1);
+export const enemyScale = (level) => 1 + 0.13 * (level - 1);
 export const NAMES = { elitePrefix: { frenzied: 'Frenzied', bulwark: 'Bulwark', vengeful: 'Vengeful' } };

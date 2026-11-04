@@ -1,0 +1,32 @@
+// Inline SVG icons (no external assets). All 24x24, stroke-based so they tint with currentColor.
+const S = (d, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${extra}>${d}</svg>`;
+export const ICON = {
+  cleave: S('<path d="M4 19 Q10 2 21 9"/><path d="M7 21 Q13 9 21 14"/><path d="M3 20l3-3"/>'),
+  bash: S('<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/><path d="M12 8v8M8 12h8"/>'),
+  whirl: S('<path d="M12 4a8 8 0 1 1-8 8"/><path d="M12 4l4-2M12 4l3 4"/><circle cx="12" cy="12" r="2"/>'),
+  charge: S('<path d="M5 6l7 6-7 6M12 6l7 6-7 6"/>'),
+  bolt: S('<path d="M12 2c3 5 7 7 7 12a7 7 0 0 1-14 0c0-3 2-5 3-7 1 2 2 2 2 1 0-2 1-4 2-6z"/>'),
+  nova: S('<circle cx="12" cy="12" r="3"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5M5 5l3.5 3.5M15.5 15.5L19 19M19 5l-3.5 3.5M8.5 15.5L5 19"/>'),
+  arc: S('<path d="M13 2L5 13h6l-2 9 10-12h-6z"/>'),
+  blink: S('<path d="M3 12h6M15 12h6M9 7l5 5-5 5"/>'),
+  dodge: S('<path d="M5 18c3-8 8-10 14-9M19 9l-4-2M19 9l-2 4"/>'),
+  hp: S('<path d="M9 3h6M10 3v4l-4 8a4 4 0 0 0 4 6h4a4 4 0 0 0 4-6l-4-8V3"/><path d="M8 14h8" />'),
+  mana: S('<path d="M9 3h6M10 3v4l-4 8a4 4 0 0 0 4 6h4a4 4 0 0 0 4-6l-4-8V3"/><path d="M8 14h8" />'),
+  weapon: S('<path d="M14 3l7 0 0 7L9 22l-4-4zM5 18l-2 3 3-2M13 11l-3-3"/>'),
+  offhand: S('<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/>'),
+  helm: S('<path d="M5 20V11a7 7 0 0 1 14 0v9M5 14h14M12 4v10"/>'),
+  chest: S('<path d="M6 4l-3 4 3 3v9h12v-9l3-3-3-4-3 2h-6z"/>'),
+  amulet: S('<path d="M6 3c0 8 3 10 6 10s6-2 6-10"/><circle cx="12" cy="17" r="3.5"/>'),
+  ring: S('<circle cx="12" cy="14" r="6"/><path d="M9 6l3-3 3 3-3 3z"/>'),
+  gold: S('<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10.5c0-1.5 5-1.5 5 0s-5 1.5-5 3 5 1.5 5 0"/>'),
+  lock: S('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
+  close: S('<path d="M6 6l12 12M18 6L6 18"/>'),
+  sigil: S('<path d="M12 2l3 7 7 1-5 5 1 7-6-4-6 4 1-7-5-5 7-1z"/>'),
+  scroll: S('<path d="M7 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M9 9h8M9 13h8M9 17h5"/>'),
+  skull: S('<path d="M5 12a7 7 0 0 1 14 0v3l-2 1v3H7v-3l-2-1z"/><circle cx="9.5" cy="12" r="1.3"/><circle cx="14.5" cy="12" r="1.3"/>'),
+  menu: S('<path d="M4 7h16M4 12h16M4 17h16"/>'),
+  bag: S('<path d="M6 8h12l1 12H5z"/><path d="M9 8a3 3 0 0 1 6 0"/>'),
+  sound: S('<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6"/>'),
+  mute: S('<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9l5 6M21 9l-5 6"/>'),
+};
+export const slotIcon = (slot) => ICON[slot] ?? ICON.bag;
