@@ -89,11 +89,23 @@ export class Chamber {
     for (const l of prog.loot ?? []) this.loot.push({ ...l, age: 5 });
   }
 
+  /** Safety net: never leave an actor embedded in a solid/blocked cell (it could not be reached or killed). */
+  unstick(e) {
+    if (!this.grid.circleBlocked(e.x, e.z, e.radius * 0.9)) return false;
+    for (let r = 0; r <= 6; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+      const x = Math.floor(e.x) + dx + 0.5, z = Math.floor(e.z) + dz + 0.5;
+      if (!this.grid.circleBlocked(x, z, e.radius * 0.9)) { e.x = x; e.z = z; if (e.ai) e.ai.home = { x, z }; return true; }
+    }
+    return false;
+  }
+
   pickElite() { return this.game.rng.pick(ELITE.affixes); }
 
   spawnEnemy(defId, cx, cz, opts = {}) {
     const def = ENEMIES[defId];
     const e = createEnemy(this.game, def, cx + 0.5, cz + 0.5, { level: this.def.level, ...opts });
+    this.unstick(e);
     this.enemies.push(e);
     return e;
   }
@@ -318,7 +330,7 @@ export class Chamber {
         const x = owner.x + Math.sin(a) * r, z = owner.z + Math.cos(a) * r;
         if (this.grid.circleBlocked(x, z, 0.5) || Math.hypot(x - p.x, z - p.z) < 3) continue;
         const e = this.spawnEnemy(def, Math.floor(x), Math.floor(z), { spawnT: 1.1, group: owner.group });
-        e.x = x; e.z = z; e.parentId = owner.id; e.ai.alerted = true;
+        e.x = x; e.z = z; this.unstick(e); e.parentId = owner.id; e.ai.alerted = true;
         this.game.emit('spawn', { actor: e, summoned: true });
         break;
       }

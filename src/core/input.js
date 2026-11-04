@@ -49,6 +49,7 @@ export class Input {
   lockedEntity() {
     const g = this.getGame(); if (!g || !this.lockId) return null;
     const t = g.chamber.byId(this.lockId) ?? g.chamber.props.get(this.lockId);
+    if (t?.t === 'block' && g.chamber.puzzleOfBlock(t.id)?.solved) return null; // solved: nothing left to push, release automatically
     return t && !t.dead && !(t.prop && t.broken) ? t : null;
   }
   /** The block currently grabbed for pushing (lock-on + click to push), if any. */

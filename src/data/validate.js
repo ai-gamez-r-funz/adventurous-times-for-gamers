@@ -105,6 +105,23 @@ export function validateContent() {
       if (e.t === 'brazier' && e.puzzle) need(e.puzzle, 'puzzle', `brazier ${e.id}`);
     }
 
+    // enemy / wave spawn cells must be clear of solid objects, props, gates and wall-hugging (an enemy inside a tablet is unkillable)
+    const blockedByEntity = new Map();
+    for (const e of def.entities) {
+      if (e.x === undefined || ['enemy', 'torch', 'spawn', 'door', 'mural', 'encounter', 'puzzle', 'plate', 'glyph'].includes(e.t) || (e.t === 'prop' && (e.kind === 'banner' || !e.solid))) continue;
+      blockedByEntity.set(`${e.x},${e.z}`, `${e.t}${e.id ? ':' + e.id : ''}`);
+    }
+    for (const e of def.entities) if (e.t === 'gate') for (const [x, z] of e.cells) blockedByEntity.set(`${x},${z}`, `gate:${e.id}`);
+    const spawnOk = (label, x, z) => {
+      if (grid.solid[grid.idx(x, z)]) err(`${p}: ${label} spawns inside a solid object at (${x},${z})`);
+      else if (blockedByEntity.has(`${x},${z}`)) err(`${p}: ${label} spawns on ${blockedByEntity.get(`${x},${z}`)} at (${x},${z})`);
+      else if (grid.circleBlocked(x + 0.5, z + 0.5, 0.45)) err(`${p}: ${label} at (${x},${z}) overlaps a wall/solid`);
+    };
+    for (const e of def.entities) {
+      if (e.t === 'enemy') spawnOk(`enemy ${e.id}`, e.x, e.z);
+      if (e.t === 'encounter') e.waves.forEach((w, wi) => w.enemies.forEach((s) => spawnOk(`encounter ${e.id} wave ${wi} ${s.def}`, s.x, s.z)));
+    }
+
     // reachability from every spawn (gates/urns/cracked walls treated as passable; static solids block)
     const spawns = def.entities.filter((e) => e.t === 'spawn');
     if (!spawns.length) err(`${p}: no spawn`);

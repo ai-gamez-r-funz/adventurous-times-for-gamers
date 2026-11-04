@@ -227,3 +227,16 @@ describe('lock-on block pushing (mouse scheme)', () => {
     expect(g.chamber.gateClosed('o_gate')).toBe(false);
   }, 90000);
 });
+
+describe('spawn safety', () => {
+  it('an enemy spawned inside a solid object is moved to open floor (never unreachable)', () => {
+    const g = newGame(); gotoChamber(g, 'ossuary', 'from_nave'); clearEnemies(g);
+    const e = g.chamber.spawnEnemy('archer', 31, 15); // the lore tablet o_lore2 lives on this cell
+    expect(g.chamber.grid.circleBlocked(e.x, e.z, e.radius * 0.9)).toBe(false);
+    expect(Math.hypot(e.x - 31.5, e.z - 15.5)).toBeLessThan(3);
+  });
+  it('every authored enemy and wave spawn is clear of solids (validator guard)', async () => {
+    const { validateContent } = await import('../src/data/validate.js');
+    expect(validateContent().filter((m) => /spawns|overlaps a wall/.test(m))).toEqual([]);
+  });
+});
